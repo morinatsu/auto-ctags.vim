@@ -80,15 +80,17 @@ function! auto_ctags#ctags_cmd_opt()
 endfunction
 
 function! auto_ctags#ctags_cmd()
-  let s:ctags_cmd = ''
+  let s:ctags_cmd = []
   let s:tags_bin_path = g:auto_ctags_bin_path
 
   let s:tags_path = auto_ctags#ctags_path()
   let s:tags_lock_name = auto_ctags#ctags_lock_path()
   if len(s:tags_path) > 0 && glob(s:tags_lock_name) == ''
-    let s:ctags_cmd = 'touch '.s:tags_lock_name.' && '
-          \.s:tags_bin_path.' '.auto_ctags#ctags_cmd_opt().' -f '.s:tags_path.' && '
-          \.'rm '.s:tags_lock_name
+    let s:ctags_cmd = [
+    \   (has('win32') ? 'type nul > ' : 'touch ').s:tags_lock_name,
+    \   s:tags_bin_path.' '.auto_ctags#ctags_cmd_opt().' -f '.s:tags_path,
+    \   (has('win32') ? 'del ' : 'rm ').s:tags_lock_name
+    \]
   endif
 
   return s:ctags_cmd
@@ -98,14 +100,20 @@ function! auto_ctags#ctags(recreate)
   if g:auto_ctags ==# 0 && a:recreate ==# 0
     return
   endif
+  let l:remove_cmd = has('win32') ? '!del %s > NUL' : '!rm %s 2>/dev/null'
   if a:recreate > 0
-    silent! execute '!rm '.auto_ctags#ctags_path().' 2>/dev/null'
-    silent! execute '!rm '.auto_ctags#ctags_lock_path().' 2>/dev/null'
+    silent! execute printf(l:remove_cmd, auto_ctags#ctags_path())
+    silent! execute printf(l:remove_cmd, auto_ctags#ctags_lock_path())
   endif
 
-  let s:cmd = auto_ctags#ctags_cmd()
-  if len(s:cmd) > 0
-    silent! execute '!sh -c "'.s:cmd.'" 2>/dev/null &'
+  let s:cmds = auto_ctags#ctags_cmd()
+  if len(s:cmds) > 0
+    for l:cmd in s:cmds
+      let l:cmd_result = system(l:cmd)
+      if v:shell_error
+        echohl WarningMsg | echo l:cmd_result | echohl None
+      endif
+    endfor
   endif
 
   if a:recreate > 0
