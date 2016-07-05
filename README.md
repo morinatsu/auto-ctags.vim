@@ -2,7 +2,7 @@
 
 run the ctags command
 
-[![Build Status](https://travis-ci.org/soramugi/auto-ctags.vim.png?branch=master)](https://travis-ci.org/soramugi/auto-ctags.vim)
+[![Build Status](https://travis-ci.org/morinatsu/auto-ctags.vim.svg?branch=master)](https://travis-ci.org/morinatsu/auto-ctags.vim)
 
 ## Usage
 
